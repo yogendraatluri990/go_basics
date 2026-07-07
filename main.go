@@ -1,13 +1,13 @@
 package main
 
 import (
-	"time"
+	"fmt"
 
 	basicsApp "github.com/yogendraatluri990/go_basics.git/app"
 )
 
 func main() {
-
+	tasks := make(chan basicsApp.TaskEvent)
 	user := &basicsApp.User{
 		Name: "Yogendra",
 		Age:  30,
@@ -23,9 +23,24 @@ func main() {
 		Password: "password123",
 	}
 
-	go basicsApp.HandleLogInfo(signup)
-	time.Sleep(time.Millisecond)
+	go basicsApp.HandleLogInfo(signup, tasks)
 
-	go basicsApp.HandleLogInfo(user)
-	time.Sleep(time.Minute * 2)
+	tasks <- basicsApp.TaskEvent{
+		Title: basicsApp.TaskUserSignup,
+		Task:  basicsApp.TaskPending,
+	}
+
+	signUpEvents := <-tasks
+	fmt.Printf("TaskEvents: -> Task.Title: %s  and Task.Task: %s\n", signUpEvents.Title, signUpEvents.Task)
+	if signUpEvents.Task == basicsApp.TaskDone && signUpEvents.Title == basicsApp.TaskSignupComplete {
+		tasks <- basicsApp.TaskEvent{
+			Title: basicsApp.TaskUser,
+			Task:  basicsApp.TaskPending,
+		}
+		go basicsApp.HandleLogInfo(user, tasks)
+
+	}
+
+	userProfilTask := <-tasks
+	fmt.Printf("TaskEvents: -> Task.Title: %s  and Task.Task: %s\n", userProfilTask.Title, userProfilTask.Task)
 }
